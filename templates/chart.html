@@ -121,7 +121,7 @@
         document.getElementById('temp-loading').style.display = 'none';
 
         if (result.success && result.data) {
-            displayBarChart('tempChart', result.data, 'Temperature (°C)', '#a855f7', tempChart);
+            displayLineChart('tempChart', result.data, 'Temperature (°C)', '#a855f7', tempChart);
         } else {
             document.getElementById('temp-error').style.display = 'block';
         }
@@ -145,7 +145,7 @@
         document.getElementById('humidity-loading').style.display = 'none';
 
         if (result.success && result.data) {
-            displayBarChart('humidityChart', result.data, 'Humidity (%)', '#3b82f6', humidityChart);
+            displayLineChart('humidityChart', result.data, 'Humidity (%)', '#3b82f6', humidityChart);
         } else {
             document.getElementById('humidity-error').style.display = 'block';
         }
@@ -169,14 +169,38 @@
         document.getElementById('alert-loading').style.display = 'none';
 
         if (result.success && result.data) {
-            displayBarChart('alertChart', result.data, 'Alert Count', '#ef4444', alertChart);
+            // Create full 24-hour timeline
+            const fullTimeline = createFullDayTimeline(result.data);
+            displayBarChart('alertChart', fullTimeline, 'Alert Count', '#ef4444', alertChart);
         } else {
             document.getElementById('alert-error').style.display = 'block';
         }
     }
 
-    // Display bar chart
-    function displayBarChart(canvasId, data, label, color, existingChart) {
+    // Create a full 24-hour timeline with all hours
+    function createFullDayTimeline(data) {
+        // Create array for all 24 hours
+        const allHours = Array.from({length: 24}, (_, i) => {
+            return {
+                hour: `${i.toString().padStart(2, '0')}:00`,
+                count: 0
+            };
+        });
+
+        // Fill in the actual data
+        data.labels.forEach((label, index) => {
+            const hourIndex = parseInt(label.split(':')[0]);
+            allHours[hourIndex].count = data.values[index];
+        });
+
+        return {
+            labels: allHours.map(h => h.hour),
+            values: allHours.map(h => h.count)
+        };
+    }
+
+    // Display line chart (for temperature and humidity)
+    function displayLineChart(canvasId, data, label, color, existingChart) {
         const ctx = document.getElementById(canvasId).getContext('2d');
 
         // Destroy previous chart if exists
@@ -185,17 +209,22 @@
         }
 
         const newChart = new Chart(ctx, {
-            type: 'bar',
+            type: 'line',
             data: {
                 labels: data.labels,
                 datasets: [{
                     label: label,
                     data: data.values,
-                    backgroundColor: color,
+                    backgroundColor: color + '33', // Add transparency
                     borderColor: color,
-                    borderWidth: 2,
-                    borderRadius: 8,
-                    barThickness: 40
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4, // Smooth curves
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: color,
+                    pointBorderColor: '#1a1a2e',
+                    pointBorderWidth: 2
                 }]
             },
             options: {
@@ -229,13 +258,97 @@
                 },
                 scales: {
                     y: {
-                        beginAtZero: label === 'Alert Count',
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(168, 85, 247, 0.1)'
+                        },
+                        ticks: {
+                            color: '#c4b5fd'
+                        }
+                    },
+                    x: {
                         grid: {
                             color: 'rgba(168, 85, 247, 0.1)'
                         },
                         ticks: {
                             color: '#c4b5fd',
-                            stepSize: label === 'Alert Count' ? 1 : undefined
+                            maxRotation: 0,
+                            minRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 12  // Show every 2 hours
+                        }
+                    }
+                }
+            }
+        });
+
+        // Update the chart reference
+        if (canvasId === 'tempChart') tempChart = newChart;
+        else if (canvasId === 'humidityChart') humidityChart = newChart;
+    }
+
+    // Display bar chart (for alerts)
+    function displayBarChart(canvasId, data, label, color, existingChart) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+
+        // Destroy previous chart if exists
+        if (existingChart) {
+            existingChart.destroy();
+        }
+
+        const newChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: label,
+                    data: data.values,
+                    backgroundColor: color,
+                    borderColor: color,
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    barPercentage: 0.7,  // Makes bars closer together
+                    categoryPercentage: 0.8  // Adjusts spacing between categories
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#e9d5ff',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(30, 30, 30, 0.9)',
+                        titleColor: '#e9d5ff',
+                        bodyColor: '#c4b5fd',
+                        borderColor: color,
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return label + ': ' + context.parsed.y;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(168, 85, 247, 0.1)'
+                        },
+                        ticks: {
+                            color: '#c4b5fd',
+                            stepSize: 1
                         }
                     },
                     x: {
@@ -252,10 +365,7 @@
             }
         });
 
-        // Update the chart reference
-        if (canvasId === 'tempChart') tempChart = newChart;
-        else if (canvasId === 'humidityChart') humidityChart = newChart;
-        else if (canvasId === 'alertChart') alertChart = newChart;
+        alertChart = newChart;
     }
 
     // Initialize

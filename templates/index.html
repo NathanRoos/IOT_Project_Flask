@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}DomSafe - Dashboard{% endblock %}
+{% block title %}Sentrix Alert - Dashboard{% endblock %}
 
 {% block content %}
 <h1 class="page-title">System Overview</h1>
@@ -36,11 +36,11 @@
                 <div class="device-icon">🔔</div>
                 <div>
                     <div class="device-name">System</div>
-                    <div class="device-status" id="system-status">ON</div>
+                    <div class="device-status" id="system-status">OFF</div>
                 </div>
             </div>
             <label class="toggle-switch">
-                <input type="checkbox" id="system-toggle" checked onchange="toggleDevice('system', this)">
+                <input type="checkbox" id="system-toggle" onchange="toggleDevice('system', this)">
                 <span class="slider"></span>
             </label>
         </div>
@@ -159,25 +159,12 @@
             // Update status display
             const statusId = `${device}-status`;
             document.getElementById(statusId).textContent = action;
-
-            showNotification('Success', result.message, 'success');
+            // Notification removed - no pop-up messages
         } else {
             // Revert checkbox if failed
             checkbox.checked = !checkbox.checked;
-            showNotification('Error', result.error, 'error');
+            // Notification removed - no pop-up messages
         }
-    }
-
-    // Show notification
-    function showNotification(title, message, type) {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        alertDiv.innerHTML = `<strong>${title}:</strong> ${message}`;
-
-        const container = document.querySelector('.container');
-        container.insertBefore(alertDiv, container.firstChild);
-
-        setTimeout(() => alertDiv.remove(), 5000);
     }
 
     // Initialize

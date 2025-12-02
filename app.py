@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import psycopg
 from psycopg.rows import dict_row
+import traceback
 
 load_dotenv()
 
@@ -18,14 +19,21 @@ ADAFRUIT_IO_URL = f'https://io.adafruit.com/api/v2/{ADAFRUIT_USERNAME}'
 # Database configuration (Neon.tech PostgreSQL)
 DATABASE_URL = os.getenv('DATABASE_URL')
 
+print(f"=== APP STARTUP ===")
+print(f"DATABASE_URL configured: {DATABASE_URL is not None}")
+print(f"ADAFRUIT configured: {ADAFRUIT_USERNAME is not None}")
+
 
 def get_db_connection():
     """Create a database connection"""
     try:
+        print(f"Attempting database connection...")
         conn = psycopg.connect(DATABASE_URL)
+        print(f"✓ Database connected successfully")
         return conn
     except Exception as e:
-        print(f"Database connection error: {e}")
+        print(f"✗ Database connection error: {e}")
+        traceback.print_exc()
         return None
 
 
@@ -104,93 +112,135 @@ def get_live_data():
 
 @app.route('/api/historical-data')
 def get_historical_data():
-    """Get historical sensor data from database for a specific date"""
+    """Get historical sensor data from database for a specific date (returns all records for today)"""
     date = request.args.get('date')
     sensor = request.args.get('sensor', 'temperature')
+
+    print(f"\n=== HISTORICAL DATA REQUEST ===")
+    print(f"Date: {date}")
+    print(f"Sensor: {sensor}")
 
     if not date:
         return jsonify({'success': False, 'error': 'Date parameter required'}), 400
 
+    # Validate sensor type
+    if sensor not in ['temperature', 'humidity']:
+        return jsonify({'success': False, 'error': 'Invalid sensor type'}), 400
+
     try:
         conn = get_db_connection()
         if not conn:
+            print("✗ Database connection failed")
             return jsonify({'success': False, 'error': 'Database connection failed'}), 500
 
         cursor = conn.cursor(row_factory=dict_row)
 
-        # Query historical data for the specified date and sensor
-        query = """
-            SELECT timestamp, value 
-            FROM sensor_data 
-            WHERE DATE(timestamp) = %s AND sensor_type = %s
-            ORDER BY timestamp ASC
+        # Since we only have TIME column, fetch all records and return them
+        # This will show the pattern for a typical day
+        query = f"""
+            SELECT time, value 
+            FROM {sensor} 
+            ORDER BY time ASC
         """
-        cursor.execute(query, (date, sensor))
+
+        print(f"Executing query: {query}")
+
+        cursor.execute(query)
         results = cursor.fetchall()
+
+        print(f"✓ Query executed successfully")
+        print(f"Rows returned: {len(results)}")
 
         cursor.close()
         conn.close()
 
         # Format data for Chart.js
         data = {
-            'labels': [row['timestamp'].strftime('%H:%M:%S') for row in results],
+            'labels': [row['time'].strftime('%H:%M:%S') for row in results],
             'values': [float(row['value']) for row in results]
         }
 
+        print(f"✓ Response data formatted")
         return jsonify({'success': True, 'data': data})
 
     except Exception as e:
+        print(f"✗ ERROR in historical-data: {e}")
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/daily-averages')
 def get_daily_averages():
-    """Get daily average sensor data for a date range"""
+    """Get all sensor data points with exact timestamps"""
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     sensor = request.args.get('sensor', 'temperature')
 
+    print(f"\n=== DAILY DATA REQUEST ===")
+    print(f"Start Date: {start_date}")
+    print(f"End Date: {end_date}")
+    print(f"Sensor: {sensor}")
+
     if not start_date or not end_date:
         return jsonify({'success': False, 'error': 'Start and end dates required'}), 400
+
+    # Validate sensor type
+    if sensor not in ['temperature', 'humidity']:
+        return jsonify({'success': False, 'error': 'Invalid sensor type'}), 400
 
     try:
         conn = get_db_connection()
         if not conn:
+            print("✗ Database connection failed")
             return jsonify({'success': False, 'error': 'Database connection failed'}), 500
 
         cursor = conn.cursor(row_factory=dict_row)
 
-        # Query daily averages
-        query = """
-            SELECT DATE(timestamp) as date, AVG(value) as avg_value
-            FROM sensor_data 
-            WHERE DATE(timestamp) BETWEEN %s AND %s AND sensor_type = %s
-            GROUP BY DATE(timestamp)
-            ORDER BY DATE(timestamp) ASC
+        # Get all data points with their exact time
+        query = f"""
+            SELECT time, value
+            FROM {sensor} 
+            ORDER BY time ASC
         """
-        cursor.execute(query, (start_date, end_date, sensor))
+
+        print(f"Executing query: {query}")
+
+        cursor.execute(query)
         results = cursor.fetchall()
+
+        print(f"✓ Query executed successfully")
+        print(f"Rows returned: {len(results)}")
+
+        if results:
+            print(f"Sample row: {results[0]}")
 
         cursor.close()
         conn.close()
 
-        # Format data for Chart.js
+        # Format data for Chart.js - showing all data points with exact times
         data = {
-            'labels': [row['date'].strftime('%Y-%m-%d') for row in results],
-            'values': [float(row['avg_value']) for row in results]
+            'labels': [row['time'].strftime('%H:%M:%S') for row in results],
+            'values': [float(row['value']) for row in results]
         }
 
+        print(f"✓ Response data formatted: {len(data['labels'])} data points")
         return jsonify({'success': True, 'data': data})
 
     except Exception as e:
+        print(f"✗ ERROR in daily-data: {e}")
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/daily-alerts')
 def get_daily_alerts():
-    """Get daily alert counts for a date range"""
+    """Get alert counts grouped by hour"""
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+
+    print(f"\n=== DAILY ALERTS REQUEST ===")
+    print(f"Start Date: {start_date}")
+    print(f"End Date: {end_date}")
 
     if not start_date or not end_date:
         return jsonify({'success': False, 'error': 'Start and end dates required'}), 400
@@ -198,39 +248,54 @@ def get_daily_alerts():
     try:
         conn = get_db_connection()
         if not conn:
+            print("✗ Database connection failed")
             return jsonify({'success': False, 'error': 'Database connection failed'}), 500
 
         cursor = conn.cursor(row_factory=dict_row)
 
-        # Query daily alert counts
+        # Since we only have TIME, group by hour to show alert pattern
         query = """
-            SELECT DATE(timestamp) as date, COUNT(*) as alert_count
-            FROM security_events 
-            WHERE DATE(timestamp) BETWEEN %s AND %s AND event_type IN ('alert', 'intrusion')
-            GROUP BY DATE(timestamp)
-            ORDER BY DATE(timestamp) ASC
+            SELECT 
+                EXTRACT(HOUR FROM time) as hour,
+                COUNT(*) as alert_count
+            FROM status 
+            WHERE value = 'alert' OR value = 'armed'
+            GROUP BY EXTRACT(HOUR FROM time)
+            ORDER BY hour ASC
         """
-        cursor.execute(query, (start_date, end_date))
+
+        print(f"Executing query: {query}")
+
+        cursor.execute(query)
         results = cursor.fetchall()
+
+        print(f"✓ Query executed successfully")
+        print(f"Rows returned: {len(results)}")
+
+        if results:
+            print(f"Sample row: {results[0]}")
 
         cursor.close()
         conn.close()
 
-        # Format data for Chart.js
+        # Format data for Chart.js - showing hourly alert counts
         data = {
-            'labels': [row['date'].strftime('%Y-%m-%d') for row in results],
+            'labels': [f"{int(row['hour']):02d}:00" for row in results],
             'values': [int(row['alert_count']) for row in results]
         }
 
+        print(f"✓ Response data formatted: {len(data['labels'])} data points")
         return jsonify({'success': True, 'data': data})
 
     except Exception as e:
+        print(f"✗ ERROR in daily-alerts: {e}")
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/intrusions')
 def get_intrusions():
-    """Get intrusion events for a specific date"""
+    """Get intrusion/alert events"""
     date = request.args.get('date')
 
     if not date:
@@ -243,23 +308,24 @@ def get_intrusions():
 
         cursor = conn.cursor(row_factory=dict_row)
 
-        # Query intrusion events
+        # Query alert events from status table (all records since we don't have dates)
         query = """
-            SELECT timestamp, event_type, details 
-            FROM security_events 
-            WHERE DATE(timestamp) = %s AND event_type IN ('alert', 'intrusion')
-            ORDER BY timestamp DESC
+            SELECT time, value 
+            FROM status 
+            WHERE value = 'alert'
+            ORDER BY time DESC
+            LIMIT 50
         """
-        cursor.execute(query, (date,))
+        cursor.execute(query)
         results = cursor.fetchall()
 
         cursor.close()
         conn.close()
 
         intrusions = [{
-            'timestamp': row['timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
-            'event_type': row['event_type'],
-            'details': row.get('details', '')
+            'timestamp': row['time'].strftime('%H:%M:%S'),
+            'event_type': 'alert' if row['value'] == 'alert' else 'armed',
+            'details': f"System status: {row['value']}"
         } for row in results]
 
         return jsonify({'success': True, 'data': intrusions})
