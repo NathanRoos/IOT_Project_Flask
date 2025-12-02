@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Sentrix Alert - Dashboard{% endblock %}
+{% block title %}DomSafe - Dashboard{% endblock %}
 
 {% block content %}
 <h1 class="page-title">System Overview</h1>
@@ -27,95 +27,6 @@
         <div class="metric-label" style="font-size: 0.8rem; margin-top: 0.5rem;" id="status-update">Loading...</div>
     </div>
 </div>
-
-<div class="card" style="margin-top: 2rem;">
-    <div class="card-header">📈 Device Control</div>
-    <div class="grid grid-3">
-        <div class="device-control">
-            <div class="device-info">
-                <div class="device-icon">🔔</div>
-                <div>
-                    <div class="device-name">System</div>
-                    <div class="device-status" id="system-status">OFF</div>
-                </div>
-            </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="system-toggle" onchange="toggleDevice('system', this)">
-                <span class="slider"></span>
-            </label>
-        </div>
-
-        <div class="device-control">
-            <div class="device-info">
-                <div class="device-icon">📺</div>
-                <div>
-                    <div class="device-name">Screen</div>
-                    <div class="device-status" id="screen-status">ON</div>
-                </div>
-            </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="screen-toggle" checked onchange="toggleDevice('screen', this)">
-                <span class="slider"></span>
-            </label>
-        </div>
-
-        <div class="device-control">
-            <div class="device-info">
-                <div class="device-icon">💡</div>
-                <div>
-                    <div class="device-name">Lights</div>
-                    <div class="device-status" id="light-status">ON</div>
-                </div>
-            </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="light-toggle" checked onchange="toggleDevice('light', this)">
-                <span class="slider"></span>
-            </label>
-        </div>
-
-        <div class="device-control">
-            <div class="device-info">
-                <div class="device-icon">🔊</div>
-                <div>
-                    <div class="device-name">Buzzer</div>
-                    <div class="device-status" id="buzzer-status">ON</div>
-                </div>
-            </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="buzzer-toggle" checked onchange="toggleDevice('buzzer', this)">
-                <span class="slider"></span>
-            </label>
-        </div>
-
-        <div class="device-control">
-            <div class="device-info">
-                <div class="device-icon">🕐</div>
-                <div>
-                    <div class="device-name">Clock</div>
-                    <div class="device-status" id="clock-status">ON</div>
-                </div>
-            </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="clock-toggle" checked onchange="toggleDevice('clock', this)">
-                <span class="slider"></span>
-            </label>
-        </div>
-
-        <div class="device-control">
-            <div class="device-info">
-                <div class="device-icon">🌡️</div>
-                <div>
-                    <div class="device-name">DHT</div>
-                    <div class="device-status" id="dht-status">ON</div>
-                </div>
-            </div>
-            <label class="toggle-switch">
-                <input type="checkbox" id="dht-toggle" checked onchange="toggleDevice('dht', this)">
-                <span class="slider"></span>
-            </label>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -140,30 +51,6 @@
             // Update security status
             const status = data.data.alarm_status || 'unknown';
             document.getElementById('status-value').textContent = status.toUpperCase();
-        }
-    }
-
-    // Toggle device function
-    async function toggleDevice(device, checkbox) {
-        const action = checkbox.checked ? 'ON' : 'OFF';
-
-        const result = await apiCall('/api/control', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ device, action })
-        });
-
-        if (result.success) {
-            // Update status display
-            const statusId = `${device}-status`;
-            document.getElementById(statusId).textContent = action;
-            // Notification removed - no pop-up messages
-        } else {
-            // Revert checkbox if failed
-            checkbox.checked = !checkbox.checked;
-            // Notification removed - no pop-up messages
         }
     }
 

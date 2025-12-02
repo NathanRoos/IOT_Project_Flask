@@ -85,6 +85,20 @@ def chart():
     """Chart page for historical data"""
     return render_template('chart.html')
 
+@app.route('/about')
+def about():
+    """About page"""
+    return render_template('about.html')
+
+@app.route('/status')
+def status():
+    """System Status page"""
+    return render_template('status.html')
+
+@app.route('/controls')
+def controls():
+    """Device Controls page"""
+    return render_template('controls.html')
 
 # API Endpoints
 

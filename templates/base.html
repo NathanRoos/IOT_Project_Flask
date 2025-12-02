@@ -364,7 +364,10 @@
             <a href="/" class="nav-brand">🏠 Sentrix Alert</a>
             <ul class="nav-links">
                 <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a></li>
+                <li><a href="/status" class="{% if request.path == '/status' %}active{% endif %}">Status</a></li>
+                <li><a href="/controls" class="{% if request.path == '/controls' %}active{% endif %}">Controls</a></li>
                 <li><a href="/chart" class="{% if request.path == '/chart' %}active{% endif %}">Chart</a></li>
+                <li><a href="/about" class="{% if request.path == '/about' %}active{% endif %}">About</a></li>
             </ul>
         </div>
     </nav>

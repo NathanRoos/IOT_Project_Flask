@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}DomSafe - System Status{% endblock %}
+
+{% block content %}
+<h1 class="page-title">System Status</h1>
+
+<div class="card">
+    <div class="card-header">🔔 Current Status</div>
+    <div style="text-align: center; padding: 2rem;">
+        <div style="font-size: 4rem; margin-bottom: 1rem;" id="status-icon">🔔</div>
+        <div style="font-size: 2rem; font-weight: 700; margin-bottom: 1rem;">
+            <span class="status-badge" id="current-status-badge">LOADING</span>
+        </div>
+        <div style="color: #6b7280; font-size: 1rem;" id="status-timestamp">Checking status...</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">📋 Status Descriptions</div>
+    <div class="grid grid-2">
+        <div style="padding: 1.5rem; background: #d1fae5; border-radius: 12px; border-left: 4px solid #10b981;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <div style="font-size: 2rem;">✅</div>
+                <h3 style="color: #065f46; font-size: 1.25rem; margin: 0;">DISARMED</h3>
+            </div>
+            <p style="color: #047857; line-height: 1.6;">
+                The security system is currently inactive. All sensors are monitoring but will not trigger alarms.
+                This is the normal mode when you are home and do not require active security monitoring.
+            </p>
+        </div>
+
+        <div style="padding: 1.5rem; background: #fee2e2; border-radius: 12px; border-left: 4px solid #ef4444;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <div style="font-size: 2rem;">🛡️</div>
+                <h3 style="color: #991b1b; font-size: 1.25rem; margin: 0;">ARMED</h3>
+            </div>
+            <p style="color: #b91c1c; line-height: 1.6;">
+                The security system is actively monitoring all sensors. Any intrusion or unauthorized access will
+                trigger immediate alerts. Use this mode when leaving your property or during nighttime.
+            </p>
+        </div>
+
+        <div style="padding: 1.5rem; background: #fef3c7; border-radius: 12px; border-left: 4px solid #f59e0b;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <div style="font-size: 2rem;">⏳</div>
+                <h3 style="color: #92400e; font-size: 1.25rem; margin: 0;">ARMING</h3>
+            </div>
+            <p style="color: #b45309; line-height: 1.6;">
+                The system is in the process of activating. You have a brief countdown period to exit the premises
+                before the alarm becomes fully armed. All entry and exit points are being secured.
+            </p>
+        </div>
+
+        <div style="padding: 1.5rem; background: #fecaca; border-radius: 12px; border-left: 4px solid #dc2626;">
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <div style="font-size: 2rem;">🚨</div>
+                <h3 style="color: #7f1d1d; font-size: 1.25rem; margin: 0;">ALERT</h3>
+            </div>
+            <p style="color: #991b1b; line-height: 1.6;">
+                ⚠️ <strong>CRITICAL:</strong> An intrusion has been detected! The alarm has been triggered and
+                authorities may have been notified. Check your property immediately and review security footage
+                if available. Ensure your safety first.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">📊 Live Sensor Readings</div>
+    <div class="grid grid-3">
+        <div style="text-align: center; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🌡️</div>
+            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;" id="temp-reading">--</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">Temperature (°C)</div>
+        </div>
+
+        <div style="text-align: center; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">💧</div>
+            <div style="font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;" id="humidity-reading">--</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">Humidity (%)</div>
+        </div>
+
+        <div style="text-align: center; padding: 1.5rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🕐</div>
+            <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;" id="last-update">--</div>
+            <div style="font-size: 0.9rem; opacity: 0.9;">Last Updated</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Status icon mapping
+    const statusIcons = {
+        'disarmed': '✅',
+        'armed': '🛡️',
+        'arming': '⏳',
+        'alert': '🚨',
+        'unknown': '❓'
+    };
+
+    // Fetch system status
+    async function fetchSystemStatus() {
+        const data = await apiCall('/api/live-data');
+
+        if (data.success) {
+            // Update status
+            const status = data.data.alarm_status || 'unknown';
+            const statusLower = status.toLowerCase();
+
+            document.getElementById('current-status-badge').textContent = status.toUpperCase();
+            document.getElementById('current-status-badge').className = `status-badge status-${statusLower}`;
+            document.getElementById('status-icon').textContent = statusIcons[statusLower] || '❓';
+            document.getElementById('status-timestamp').textContent = `Last updated: ${formatTimestamp(data.data.timestamp)}`;
+
+            // Update sensor readings
+            if (data.data.temperature !== null) {
+                document.getElementById('temp-reading').textContent = data.data.temperature.toFixed(1) + '°C';
+            }
+            if (data.data.humidity !== null) {
+                document.getElementById('humidity-reading').textContent = data.data.humidity.toFixed(1) + '%';
+            }
+            document.getElementById('last-update').textContent = new Date(data.data.timestamp).toLocaleTimeString();
+        }
+    }
+
+    // Initialize
+    fetchSystemStatus();
+    setInterval(fetchSystemStatus, 5000); // Update every 5 seconds
+</script>
+{% endblock %}
