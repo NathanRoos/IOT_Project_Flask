@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}DomSafe - Environmental Data{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Environment Monitoring</h1>
+
+<div class="card">
+    <div class="card-header">📊 Historical Sensor Data</div>
+    
+    <div class="form-group">
+        <label class="form-label">Select Date:</label>
+        <input type="date" id="date-picker" class="form-input" style="max-width: 300px;">
+    </div>
+
+    <div class="form-group">
+        <label class="form-label">Select Sensor:</label>
+        <select id="sensor-picker" class="form-input" style="max-width: 300px;">
+            <option value="temperature">Temperature</option>
+            <option value="humidity">Humidity</option>
+            <option value="light">Light Level</option>
+        </select>
+    </div>
+
+    <button class="btn btn-primary" onclick="loadHistoricalData()">
+        📈 Load Data
+    </button>
+
+    <div id="chart-loading" class="loading" style="display: none;">
+        Loading data...
+    </div>
+
+    <div id="chart-error" class="alert alert-error" style="display: none;">
+        Failed to load data. Please try again.
+    </div>
+
+    <div class="chart-container">
+        <canvas id="sensorChart"></canvas>
+    </div>
+</div>
+
+<div class="grid grid-3" style="margin-top: 2rem;">
+    <div class="card">
+        <div class="card-header">🌡️ Temperature</div>
+        <div style="text-align: center; padding: 2rem 0;">
+            <div style="font-size: 3rem; font-weight: 700; color: #667eea;" id="current-temp">--</div>
+            <div style="color: #6b7280; margin-top: 0.5rem;">Current Reading (°C)</div>
+        </div>
+        <div style="padding-top: 1rem; border-top: 2px solid #f0f0f0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Min Today:</span>
+                <strong id="temp-min">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Max Today:</span>
+                <strong id="temp-max">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Average:</span>
+                <strong id="temp-avg">--</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">💧 Humidity</div>
+        <div style="text-align: center; padding: 2rem 0;">
+            <div style="font-size: 3rem; font-weight: 700; color: #667eea;" id="current-humidity">--</div>
+            <div style="color: #6b7280; margin-top: 0.5rem;">Current Reading (%)</div>
+        </div>
+        <div style="padding-top: 1rem; border-top: 2px solid #f0f0f0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Min Today:</span>
+                <strong id="humidity-min">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Max Today:</span>
+                <strong id="humidity-max">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Average:</span>
+                <strong id="humidity-avg">--</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">💡 Light Level</div>
+        <div style="text-align: center; padding: 2rem 0;">
+            <div style="font-size: 3rem; font-weight: 700; color: #667eea;" id="current-light">--</div>
+            <div style="color: #6b7280; margin-top: 0.5rem;">Current Reading (lux)</div>
+        </div>
+        <div style="padding-top: 1rem; border-top: 2px solid #f0f0f0;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Min Today:</span>
+                <strong id="light-min">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Max Today:</span>
+                <strong id="light-max">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Average:</span>
+                <strong id="light-avg">--</strong>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let sensorChart = null;
+
+    // Initialize date picker to today
+    document.getElementById('date-picker').valueAsDate = new Date();
+
+    // Load historical data
+    async function loadHistoricalData() {
+        const date = document.getElementById('date-picker').value;
+        const sensor = document.getElementById('sensor-picker').value;
+
+        if (!date) {
+            alert('Please select a date');
+            return;
+        }
+
+        // Show loading
+        document.getElementById('chart-loading').style.display = 'block';
+        document.getElementById('chart-error').style.display = 'none';
+
+        const result = await apiCall(`/api/historical-data?date=${date}&sensor=${sensor}`);
+
+        // Hide loading
+        document.getElementById('chart-loading').style.display = 'none';
+
+        if (result.success && result.data) {
+            displayChart(result.data, sensor);
+        } else {
+            document.getElementById('chart-error').style.display = 'block';
+        }
+    }
+
+    // Display chart
+    function displayChart(data, sensor) {
+        const ctx = document.getElementById('sensorChart').getContext('2d');
+
+        // Destroy previous chart if exists
+        if (sensorChart) {
+            sensorChart.destroy();
+        }
+
+        // Get sensor label and color
+        const sensorConfig = {
+            temperature: { label: 'Temperature (°C)', color: '#ef4444' },
+            humidity: { label: 'Humidity (%)', color: '#3b82f6' },
+            light: { label: 'Light Level (lux)', color: '#f59e0b' }
+        };
+
+        const config = sensorConfig[sensor] || sensorConfig.temperature;
+
+        sensorChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: config.label,
+                    data: data.values,
+                    borderColor: config.color,
+                    backgroundColor: config.color + '20',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: '#f0f0f0'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: '#f0f0f0'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Calculate and display statistics
+        if (data.values.length > 0) {
+            const min = Math.min(...data.values).toFixed(1);
+            const max = Math.max(...data.values).toFixed(1);
+            const avg = (data.values.reduce((a, b) => a + b, 0) / data.values.length).toFixed(1);
+
+            // Update stats based on sensor type
+            const prefix = sensor === 'temperature' ? 'temp' : 
+                          sensor === 'humidity' ? 'humidity' : 'light';
+            
+            document.getElementById(`${prefix}-min`).textContent = min;
+            document.getElementById(`${prefix}-max`).textContent = max;
+            document.getElementById(`${prefix}-avg`).textContent = avg;
+        }
+    }
+
+    // Fetch current live data
+    async function fetchCurrentData() {
+        const data = await apiCall('/api/live-data');
+        
+        if (data.success) {
+            if (data.data.temperature !== null) {
+                document.getElementById('current-temp').textContent = data.data.temperature.toFixed(1);
+            }
+            // Add humidity and light if available in your implementation
+        }
+    }
+
+    // Initialize
+    fetchCurrentData();
+    setInterval(fetchCurrentData, 10000); // Update every 10 seconds
+</script>
+{% endblock %}

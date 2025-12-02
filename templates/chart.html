@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block title %}DomSafe - Charts{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Analytics Dashboard</h1>
+
+<div class="card">
+    <div class="card-header">🌡️ Average Temperature by Day</div>
+
+    <div class="form-group">
+        <label class="form-label">Select Date Range:</label>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <input type="date" id="temp-start-date" class="form-input" style="max-width: 200px;">
+            <span style="color: #e9d5ff;">to</span>
+            <input type="date" id="temp-end-date" class="form-input" style="max-width: 200px;">
+            <button class="btn btn-primary" onclick="loadTemperatureChart()">
+                📊 Load Chart
+            </button>
+        </div>
+    </div>
+
+    <div id="temp-loading" class="loading" style="display: none;">Loading data...</div>
+    <div id="temp-error" class="alert alert-error" style="display: none;">Failed to load data.</div>
+
+    <div class="chart-container" style="height: 400px;">
+        <canvas id="tempChart"></canvas>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">💧 Average Humidity by Day</div>
+
+    <div class="form-group">
+        <label class="form-label">Select Date Range:</label>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <input type="date" id="humidity-start-date" class="form-input" style="max-width: 200px;">
+            <span style="color: #e9d5ff;">to</span>
+            <input type="date" id="humidity-end-date" class="form-input" style="max-width: 200px;">
+            <button class="btn btn-primary" onclick="loadHumidityChart()">
+                📊 Load Chart
+            </button>
+        </div>
+    </div>
+
+    <div id="humidity-loading" class="loading" style="display: none;">Loading data...</div>
+    <div id="humidity-error" class="alert alert-error" style="display: none;">Failed to load data.</div>
+
+    <div class="chart-container" style="height: 400px;">
+        <canvas id="humidityChart"></canvas>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">🚨 Emergency Alerts by Day</div>
+
+    <div class="form-group">
+        <label class="form-label">Select Date Range:</label>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <input type="date" id="alert-start-date" class="form-input" style="max-width: 200px;">
+            <span style="color: #e9d5ff;">to</span>
+            <input type="date" id="alert-end-date" class="form-input" style="max-width: 200px;">
+            <button class="btn btn-primary" onclick="loadAlertChart()">
+                📊 Load Chart
+            </button>
+        </div>
+    </div>
+
+    <div id="alert-loading" class="loading" style="display: none;">Loading data...</div>
+    <div id="alert-error" class="alert alert-error" style="display: none;">Failed to load data.</div>
+
+    <div class="chart-container" style="height: 400px;">
+        <canvas id="alertChart"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let tempChart = null;
+    let humidityChart = null;
+    let alertChart = null;
+
+    // Initialize date pickers - default to last 7 days
+    function initializeDates() {
+        const today = new Date();
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const todayStr = today.toISOString().split('T')[0];
+        const weekAgoStr = weekAgo.toISOString().split('T')[0];
+
+        // Temperature dates
+        document.getElementById('temp-start-date').value = weekAgoStr;
+        document.getElementById('temp-end-date').value = todayStr;
+
+        // Humidity dates
+        document.getElementById('humidity-start-date').value = weekAgoStr;
+        document.getElementById('humidity-end-date').value = todayStr;
+
+        // Alert dates
+        document.getElementById('alert-start-date').value = weekAgoStr;
+        document.getElementById('alert-end-date').value = todayStr;
+    }
+
+    // Load temperature chart
+    async function loadTemperatureChart() {
+        const startDate = document.getElementById('temp-start-date').value;
+        const endDate = document.getElementById('temp-end-date').value;
+
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates');
+            return;
+        }
+
+        document.getElementById('temp-loading').style.display = 'block';
+        document.getElementById('temp-error').style.display = 'none';
+
+        const result = await apiCall(`/api/daily-averages?start_date=${startDate}&end_date=${endDate}&sensor=temperature`);
+
+        document.getElementById('temp-loading').style.display = 'none';
+
+        if (result.success && result.data) {
+            displayBarChart('tempChart', result.data, 'Temperature (°C)', '#a855f7', tempChart);
+        } else {
+            document.getElementById('temp-error').style.display = 'block';
+        }
+    }
+
+    // Load humidity chart
+    async function loadHumidityChart() {
+        const startDate = document.getElementById('humidity-start-date').value;
+        const endDate = document.getElementById('humidity-end-date').value;
+
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates');
+            return;
+        }
+
+        document.getElementById('humidity-loading').style.display = 'block';
+        document.getElementById('humidity-error').style.display = 'none';
+
+        const result = await apiCall(`/api/daily-averages?start_date=${startDate}&end_date=${endDate}&sensor=humidity`);
+
+        document.getElementById('humidity-loading').style.display = 'none';
+
+        if (result.success && result.data) {
+            displayBarChart('humidityChart', result.data, 'Humidity (%)', '#3b82f6', humidityChart);
+        } else {
+            document.getElementById('humidity-error').style.display = 'block';
+        }
+    }
+
+    // Load alert chart
+    async function loadAlertChart() {
+        const startDate = document.getElementById('alert-start-date').value;
+        const endDate = document.getElementById('alert-end-date').value;
+
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates');
+            return;
+        }
+
+        document.getElementById('alert-loading').style.display = 'block';
+        document.getElementById('alert-error').style.display = 'none';
+
+        const result = await apiCall(`/api/daily-alerts?start_date=${startDate}&end_date=${endDate}`);
+
+        document.getElementById('alert-loading').style.display = 'none';
+
+        if (result.success && result.data) {
+            displayBarChart('alertChart', result.data, 'Alert Count', '#ef4444', alertChart);
+        } else {
+            document.getElementById('alert-error').style.display = 'block';
+        }
+    }
+
+    // Display bar chart
+    function displayBarChart(canvasId, data, label, color, existingChart) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+
+        // Destroy previous chart if exists
+        if (existingChart) {
+            existingChart.destroy();
+        }
+
+        const newChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: label,
+                    data: data.values,
+                    backgroundColor: color,
+                    borderColor: color,
+                    borderWidth: 2,
+                    borderRadius: 8,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#e9d5ff',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(30, 30, 30, 0.9)',
+                        titleColor: '#e9d5ff',
+                        bodyColor: '#c4b5fd',
+                        borderColor: color,
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return label + ': ' + context.parsed.y.toFixed(1);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: label === 'Alert Count',
+                        grid: {
+                            color: 'rgba(168, 85, 247, 0.1)'
+                        },
+                        ticks: {
+                            color: '#c4b5fd',
+                            stepSize: label === 'Alert Count' ? 1 : undefined
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(168, 85, 247, 0.1)'
+                        },
+                        ticks: {
+                            color: '#c4b5fd',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+
+        // Update the chart reference
+        if (canvasId === 'tempChart') tempChart = newChart;
+        else if (canvasId === 'humidityChart') humidityChart = newChart;
+        else if (canvasId === 'alertChart') alertChart = newChart;
+    }
+
+    // Initialize
+    initializeDates();
+
+    // Auto-load charts on page load
+    setTimeout(() => {
+        loadTemperatureChart();
+        loadHumidityChart();
+        loadAlertChart();
+    }, 500);
+</script>
+{% endblock %}

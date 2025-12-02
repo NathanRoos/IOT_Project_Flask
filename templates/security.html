@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}DomSafe - Security Management{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Security Monitoring</h1>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">🔒 Security System Control</div>
+        
+        <div style="text-align: center; padding: 2rem 0;">
+            <div id="security-status" class="status-badge status-disarmed">DISARMED</div>
+            <div style="margin-top: 1rem; color: #6b7280;" id="status-message">
+                System is currently inactive
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <div class="form-group">
+                <label class="form-label">System Control:</label>
+                <div style="display: grid; gap: 1rem;">
+                    <button class="btn btn-success" onclick="toggleSecurity(true)">
+                        ✓ Enable Security System
+                    </button>
+                    <button class="btn btn-danger" onclick="toggleSecurity(false)">
+                        ✕ Disable Security System
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 2px solid #f0f0f0;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.1rem;">System Information</h3>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Last Armed:</span>
+                <strong id="last-armed">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Last Disarmed:</span>
+                <strong id="last-disarmed">--</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span>Status Update:</span>
+                <strong id="last-update">--</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">📊 Security Statistics</div>
+        
+        <div style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div>
+                    <div style="color: #6b7280; font-size: 0.9rem;">Total Alerts Today</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: #ef4444;" id="alerts-today">0</div>
+                </div>
+                <div style="font-size: 3rem;">🚨</div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div>
+                    <div style="color: #6b7280; font-size: 0.9rem;">Motion Events Today</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: #f59e0b;" id="motion-today">0</div>
+                </div>
+                <div style="font-size: 3rem;">👁️</div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="color: #6b7280; font-size: 0.9rem;">System Uptime</div>
+                    <div style="font-size: 2rem; font-weight: 700; color: #10b981;" id="uptime">99.9%</div>
+                </div>
+                <div style="font-size: 3rem;">✓</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">📋 Security Event Log</div>
+    
+    <div class="form-group">
+        <label class="form-label">Select Date to View Intrusions:</label>
+        <div style="display: flex; gap: 1rem; align-items: flex-end;">
+            <input type="date" id="intrusion-date" class="form-input" style="max-width: 300px;">
+            <button class="btn btn-primary" onclick="loadIntrusions()">
+                🔍 Load Events
+            </button>
+        </div>
+    </div>
+
+    <div id="intrusions-loading" class="loading" style="display: none;">
+        Loading intrusion data...
+    </div>
+
+    <div id="intrusions-error" class="alert alert-error" style="display: none;">
+        Failed to load intrusion data.
+    </div>
+
+    <div id="intrusions-container">
+        <div style="color: #6b7280; text-align: center; padding: 2rem;">
+            Select a date to view security events
+        </div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">🔔 Recent Activity</div>
+    
+    <div id="recent-activity">
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">✓</div>
+                <div>
+                    <div class="device-name">System Status Check</div>
+                    <div class="device-status">All systems operational</div>
+                </div>
+            </div>
+            <div style="color: #6b7280; font-size: 0.9rem;">Just now</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize date picker to today
+    document.getElementById('intrusion-date').valueAsDate = new Date();
+
+    // Toggle security system
+    async function toggleSecurity(enabled) {
+        const result = await apiCall('/api/security-toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ enabled })
+        });
+
+        if (result.success) {
+            showNotification('Success', result.message, 'success');
+            updateSecurityStatus();
+        } else {
+            showNotification('Error', result.error, 'error');
+        }
+    }
+
+    // Update security status
+    async function updateSecurityStatus() {
+        const data = await apiCall('/api/system-status');
+        
+        if (data.success) {
+            const status = data.status.alarm || 'unknown';
+            const statusBadge = document.getElementById('security-status');
+            const statusMessage = document.getElementById('status-message');
+            
+            statusBadge.textContent = status.toUpperCase();
+            statusBadge.className = 'status-badge status-' + status.toLowerCase();
+            
+            const messages = {
+                'disarmed': 'System is currently inactive',
+                'armed': 'System is monitoring for intrusions',
+                'arming': 'System is arming...',
+                'disarming': 'System is disarming...',
+                'alert': 'ALERT: Intrusion detected!'
+            };
+            
+            statusMessage.textContent = messages[status.toLowerCase()] || 'Status unknown';
+            document.getElementById('last-update').textContent = formatTimestamp(data.status.last_update);
+        }
+    }
+
+    // Load intrusions for selected date
+    async function loadIntrusions() {
+        const date = document.getElementById('intrusion-date').value;
+
+        if (!date) {
+            alert('Please select a date');
+            return;
+        }
+
+        // Show loading
+        document.getElementById('intrusions-loading').style.display = 'block';
+        document.getElementById('intrusions-error').style.display = 'none';
+        document.getElementById('intrusions-container').innerHTML = '';
+
+        const result = await apiCall(`/api/intrusions?date=${date}`);
+
+        // Hide loading
+        document.getElementById('intrusions-loading').style.display = 'none';
+
+        if (result.success) {
+            displayIntrusions(result.data, date);
+        } else {
+            document.getElementById('intrusions-error').style.display = 'block';
+        }
+    }
+
+    // Display intrusions
+    function displayIntrusions(intrusions, date) {
+        const container = document.getElementById('intrusions-container');
+
+        if (intrusions.length === 0) {
+            container.innerHTML = `
+                <div style="color: #10b981; text-align: center; padding: 2rem;">
+                    ✓ No intrusions detected on ${date}
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div style="overflow-x: auto;">';
+        html += '<table style="width: 100%; border-collapse: collapse;">';
+        html += `
+            <thead>
+                <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                    <th style="padding: 1rem; text-align: left;">Time</th>
+                    <th style="padding: 1rem; text-align: left;">Event Type</th>
+                    <th style="padding: 1rem; text-align: left;">Details</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        intrusions.forEach((intrusion, index) => {
+            const bgColor = index % 2 === 0 ? '#ffffff' : '#f9fafb';
+            html += `
+                <tr style="background: ${bgColor}; border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 1rem;">${intrusion.timestamp}</td>
+                    <td style="padding: 1rem;">
+                        <span class="status-badge status-alert">${intrusion.event_type.toUpperCase()}</span>
+                    </td>
+                    <td style="padding: 1rem;">${intrusion.details || 'Motion detected'}</td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+
+        // Update statistics
+        document.getElementById('alerts-today').textContent = intrusions.length;
+    }
+
+    // Show notification
+    function showNotification(title, message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.innerHTML = `<strong>${title}:</strong> ${message}`;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    // Initialize
+    updateSecurityStatus();
+    setInterval(updateSecurityStatus, 5000); // Update every 5 seconds
+</script>
+{% endblock %}

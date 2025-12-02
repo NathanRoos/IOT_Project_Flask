@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}DomSafe - Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="page-title">System Overview</h1>
+
+<div class="grid grid-3">
+    <div class="metric-card">
+        <div class="metric-icon">🌡️</div>
+        <div class="metric-value" id="temp-value">--</div>
+        <div class="metric-label">Temperature (°C)</div>
+        <div class="metric-label" style="font-size: 0.8rem; margin-top: 0.5rem;" id="temp-update">Loading...</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon">💧</div>
+        <div class="metric-value" id="humidity-value">--</div>
+        <div class="metric-label">Humidity (%)</div>
+        <div class="metric-label" style="font-size: 0.8rem; margin-top: 0.5rem;" id="humidity-update">Loading...</div>
+    </div>
+
+    <div class="metric-card">
+        <div class="metric-icon">🔔</div>
+        <div class="metric-value" id="status-value">--</div>
+        <div class="metric-label">System Status</div>
+        <div class="metric-label" style="font-size: 0.8rem; margin-top: 0.5rem;" id="status-update">Loading...</div>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">📈 Device Control</div>
+    <div class="grid grid-3">
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">🔔</div>
+                <div>
+                    <div class="device-name">System</div>
+                    <div class="device-status" id="system-status">ON</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="system-toggle" checked onchange="toggleDevice('system', this)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">📺</div>
+                <div>
+                    <div class="device-name">Screen</div>
+                    <div class="device-status" id="screen-status">ON</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="screen-toggle" checked onchange="toggleDevice('screen', this)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">💡</div>
+                <div>
+                    <div class="device-name">Lights</div>
+                    <div class="device-status" id="light-status">ON</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="light-toggle" checked onchange="toggleDevice('light', this)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">🔊</div>
+                <div>
+                    <div class="device-name">Buzzer</div>
+                    <div class="device-status" id="buzzer-status">ON</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="buzzer-toggle" checked onchange="toggleDevice('buzzer', this)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">🕐</div>
+                <div>
+                    <div class="device-name">Clock</div>
+                    <div class="device-status" id="clock-status">ON</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="clock-toggle" checked onchange="toggleDevice('clock', this)">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">🌡️</div>
+                <div>
+                    <div class="device-name">DHT</div>
+                    <div class="device-status" id="dht-status">ON</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="dht-toggle" checked onchange="toggleDevice('dht', this)">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Fetch live data from Adafruit IO
+    async function fetchLiveData() {
+        const data = await apiCall('/api/live-data');
+
+        if (data.success) {
+            // Update temperature
+            if (data.data.temperature !== null) {
+                document.getElementById('temp-value').textContent = data.data.temperature.toFixed(1);
+                document.getElementById('temp-update').textContent = `Updated: ${formatTimestamp(data.data.timestamp)}`;
+            }
+
+            // Update humidity
+            if (data.data.humidity !== null) {
+                document.getElementById('humidity-value').textContent = data.data.humidity.toFixed(1);
+                document.getElementById('humidity-update').textContent = `Updated: ${formatTimestamp(data.data.timestamp)}`;
+            }
+
+            // Update security status
+            const status = data.data.alarm_status || 'unknown';
+            document.getElementById('status-value').textContent = status.toUpperCase();
+        }
+    }
+
+    // Toggle device function
+    async function toggleDevice(device, checkbox) {
+        const action = checkbox.checked ? 'ON' : 'OFF';
+
+        const result = await apiCall('/api/control', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ device, action })
+        });
+
+        if (result.success) {
+            // Update status display
+            const statusId = `${device}-status`;
+            document.getElementById(statusId).textContent = action;
+
+            showNotification('Success', result.message, 'success');
+        } else {
+            // Revert checkbox if failed
+            checkbox.checked = !checkbox.checked;
+            showNotification('Error', result.error, 'error');
+        }
+    }
+
+    // Show notification
+    function showNotification(title, message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.innerHTML = `<strong>${title}:</strong> ${message}`;
+
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    // Initialize
+    fetchLiveData();
+    setInterval(fetchLiveData, 5000); // Update every 5 seconds
+</script>
+{% endblock %}

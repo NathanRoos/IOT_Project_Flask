@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}DomSafe - About{% endblock %}
+
+{% block content %}
+<h1 class="page-title">About DomSafe</h1>
+
+<div class="card">
+    <div class="card-header">🏠 Project Information</div>
+    <div style="line-height: 1.8;">
+        <h2 style="color: #667eea; margin-bottom: 1rem;">IoT Home Automation and Security System</h2>
+        <p style="margin-bottom: 1rem;">
+            DomSafe is a comprehensive IoT-based home automation and security system built on Raspberry Pi. 
+            It integrates real-time environmental monitoring, security features, and smart device control 
+            into a unified platform.
+        </p>
+        <p style="margin-bottom: 1rem;">
+            This system demonstrates the practical application of Internet of Things technologies for 
+            residential security and automation, featuring motion detection, RFID authentication, 
+            environmental sensing, and remote device control.
+        </p>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">👥 Team Members</div>
+        <div style="line-height: 2;">
+            <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; margin-right: 1rem;">
+                    NR
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 1.1rem;">Nathan Roos</div>
+                    <div style="color: #6b7280; font-size: 0.9rem;">Hardware & Backend Development</div>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; margin-right: 1rem;">
+                    LC
+                </div>
+                <div>
+                    <div style="font-weight: 600; font-size: 1.1rem;">Louis Caron</div>
+                    <div style="color: #6b7280; font-size: 0.9rem;">System Integration & Testing</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">🎓 Course Information</div>
+        <div style="line-height: 2;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: #6b7280;">Course:</span>
+                <strong>420-N55: IoT Design and Prototyping</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: #6b7280;">Professor:</span>
+                <strong>Prof. Haikel Hichri</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span style="color: #6b7280;">Institution:</span>
+                <strong>Champlain College</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: #6b7280;">Semester:</span>
+                <strong>Fall 2025</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">✨ Key Features</div>
+    <div class="grid grid-2">
+        <div>
+            <h3 style="color: #667eea; margin-bottom: 1rem;">🔒 Security System</h3>
+            <ul style="line-height: 2; padding-left: 1.5rem;">
+                <li>PIR motion detection</li>
+                <li>RFID authentication</li>
+                <li>Visual LED indicators</li>
+                <li>Audio buzzer alerts</li>
+                <li>Camera integration</li>
+                <li>Real-time MQTT updates</li>
+                <li>Email emergency alerts</li>
+            </ul>
+        </div>
+        <div>
+            <h3 style="color: #667eea; margin-bottom: 1rem;">🏠 Smart Home Features</h3>
+            <ul style="line-height: 2; padding-left: 1.5rem;">
+                <li>Environmental monitoring (Temperature)</li>
+                <li>LCD status display</li>
+                <li>Remote device control</li>
+                <li>Historical data logging</li>
+                <li>Cloud data synchronization</li>
+                <li>Web-based dashboard</li>
+                <li>Adafruit IO integration</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">🛠️ Technology Stack</div>
+    <div class="grid grid-3">
+        <div style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔧</div>
+            <h4 style="color: #667eea; margin-bottom: 0.5rem;">Hardware</h4>
+            <div style="color: #6b7280; font-size: 0.9rem; line-height: 1.6;">
+                Raspberry Pi 4<br>
+                PIR Motion Sensor<br>
+                RFID RC522<br>
+                DHT11 Sensor<br>
+                Pi Camera V2<br>
+                LCD Display
+            </div>
+        </div>
+        <div style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">💻</div>
+            <h4 style="color: #667eea; margin-bottom: 0.5rem;">Backend</h4>
+            <div style="color: #6b7280; font-size: 0.9rem; line-height: 1.6;">
+                Python 3<br>
+                Flask Framework<br>
+                PostgreSQL (Neon)<br>
+                SQLite (Local)<br>
+                Paho MQTT<br>
+                Adafruit IO
+            </div>
+        </div>
+        <div style="text-align: center; padding: 1.5rem;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎨</div>
+            <h4 style="color: #667eea; margin-bottom: 0.5rem;">Frontend</h4>
+            <div style="color: #6b7280; font-size: 0.9rem; line-height: 1.6;">
+                HTML5/CSS3<br>
+                JavaScript ES6<br>
+                Chart.js<br>
+                Responsive Design<br>
+                RESTful API<br>
+                AJAX Requests
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">🔗 System Architecture</div>
+    <div style="text-align: center; padding: 2rem;">
+        <div style="max-width: 800px; margin: 0 auto; line-height: 2; text-align: left;">
+            <p style="margin-bottom: 1rem;">
+                <strong>1. Raspberry Pi</strong> collects sensor data and manages hardware components
+            </p>
+            <p style="margin-bottom: 1rem;">
+                <strong>2. MQTT Client</strong> sends real-time data to Adafruit IO for live monitoring
+            </p>
+            <p style="margin-bottom: 1rem;">
+                <strong>3. Local SQLite</strong> stores data when internet is unavailable
+            </p>
+            <p style="margin-bottom: 1rem;">
+                <strong>4. Cloud Database</strong> (Neon PostgreSQL) syncs and stores historical data
+            </p>
+            <p style="margin-bottom: 1rem;">
+                <strong>5. Flask Web App</strong> provides user interface and device control
+            </p>
+            <p>
+                <strong>6. HTTP API</strong> fetches live data from Adafruit IO and historical data from cloud database
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">📞 Contact & Resources</div>
+    <div style="line-height: 2;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: #6b7280;">GitHub Repository:</span>
+            <strong><a href="#" style="color: #667eea; text-decoration: none;">github.com/yourusername/iot-home-defense</a></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: #6b7280;">Adafruit IO Dashboard:</span>
+            <strong><a href="#" style="color: #667eea; text-decoration: none;">View Dashboard</a></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="color: #6b7280;">Documentation:</span>
+            <strong><a href="#" style="color: #667eea; text-decoration: none;">Read the Docs</a></strong>
+        </div>
+        <div style="display: flex; justify-content: space-between;">
+            <span style="color: #6b7280;">Video Demo:</span>
+            <strong><a href="#" style="color: #667eea; text-decoration: none;">Watch on YouTube</a></strong>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">📝 License & Acknowledgments</div>
+    <div style="line-height: 1.8;">
+        <p style="margin-bottom: 1rem;">
+            This project is developed as part of the IoT Design and Prototyping course at Champlain College.
+        </p>
+        <p style="margin-bottom: 1rem;">
+            <strong>Acknowledgments:</strong>
+        </p>
+        <ul style="padding-left: 1.5rem; line-height: 2;">
+            <li>Adafruit for CircuitPython libraries and IoT platform</li>
+            <li>Raspberry Pi Foundation for hardware documentation</li>
+            <li>Prof. Haikel Hichri for guidance and support</li>
+            <li>Open-source community for various libraries and tools</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

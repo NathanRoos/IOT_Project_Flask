@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}DomSafe - Device Control{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Device Control</h1>
+
+<div class="card">
+    <div class="card-header">💡 Living Room Light</div>
+    <div class="device-control">
+        <div class="device-info">
+            <div class="device-icon" style="font-size: 3rem;">💡</div>
+            <div>
+                <div class="device-name">Living Room Light</div>
+                <div class="device-status" id="living-status">OFF</div>
+                <div style="color: #6b7280; font-size: 0.9rem; margin-top: 0.25rem;">
+                    Last updated: <span id="living-update">--</span>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button class="btn btn-success" onclick="controlDevice('living-room-light', 'ON', 'living')">
+                Turn ON
+            </button>
+            <button class="btn btn-danger" onclick="controlDevice('living-room-light', 'OFF', 'living')">
+                Turn OFF
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">🌀 Bedroom Fan</div>
+    <div class="device-control">
+        <div class="device-info">
+            <div class="device-icon" style="font-size: 3rem;">🌀</div>
+            <div>
+                <div class="device-name">Bedroom Fan</div>
+                <div class="device-status" id="fan-status">OFF</div>
+                <div style="color: #6b7280; font-size: 0.9rem; margin-top: 0.25rem;">
+                    Last updated: <span id="fan-update">--</span>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button class="btn btn-success" onclick="controlDevice('bedroom-fan', 'ON', 'fan')">
+                Turn ON
+            </button>
+            <button class="btn btn-danger" onclick="controlDevice('bedroom-fan', 'OFF', 'fan')">
+                Turn OFF
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">🚪 Garage Door</div>
+    <div class="device-control">
+        <div class="device-info">
+            <div class="device-icon" style="font-size: 3rem;">🚪</div>
+            <div>
+                <div class="device-name">Garage Door</div>
+                <div class="device-status" id="garage-status">CLOSED</div>
+                <div style="color: #6b7280; font-size: 0.9rem; margin-top: 0.25rem;">
+                    Last updated: <span id="garage-update">--</span>
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button class="btn btn-success" onclick="controlDevice('garage-door', 'OPEN', 'garage')">
+                Open Door
+            </button>
+            <button class="btn btn-danger" onclick="controlDevice('garage-door', 'CLOSE', 'garage')">
+                Close Door
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">🔌 Additional Smart Devices</div>
+    <div class="grid grid-2">
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">📺</div>
+                <div>
+                    <div class="device-name">Smart TV</div>
+                    <div class="device-status">OFF</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" onchange="toggleDevice(this, 'smart-tv')">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">🔊</div>
+                <div>
+                    <div class="device-name">Sound System</div>
+                    <div class="device-status">OFF</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" onchange="toggleDevice(this, 'sound-system')">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">❄️</div>
+                <div>
+                    <div class="device-name">Air Conditioner</div>
+                    <div class="device-status">OFF</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" onchange="toggleDevice(this, 'air-conditioner')">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="device-control">
+            <div class="device-info">
+                <div class="device-icon">☕</div>
+                <div>
+                    <div class="device-name">Coffee Maker</div>
+                    <div class="device-status">OFF</div>
+                </div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" onchange="toggleDevice(this, 'coffee-maker')">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">📊 Device Activity Log</div>
+    <div id="activity-log">
+        <div style="color: #6b7280; text-align: center; padding: 2rem;">
+            No recent device activity
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Control main devices
+    async function controlDevice(device, action, prefix) {
+        const result = await apiCall('/api/control', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ device, action })
+        });
+
+        if (result.success) {
+            // Update status display
+            document.getElementById(`${prefix}-status`).textContent = action;
+            document.getElementById(`${prefix}-update`).textContent = new Date().toLocaleTimeString();
+            
+            // Log activity
+            logActivity(device, action);
+            
+            showNotification('Success', result.message, 'success');
+        } else {
+            showNotification('Error', result.error, 'error');
+        }
+    }
+
+    // Toggle additional devices
+    async function toggleDevice(checkbox, device) {
+        const action = checkbox.checked ? 'ON' : 'OFF';
+        
+        const result = await apiCall('/api/control', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ device, action })
+        });
+
+        if (result.success) {
+            // Update status
+            const statusElement = checkbox.closest('.device-control').querySelector('.device-status');
+            statusElement.textContent = action;
+            
+            // Log activity
+            logActivity(device, action);
+            
+            showNotification('Success', `${device} turned ${action}`, 'success');
+        } else {
+            // Revert checkbox if failed
+            checkbox.checked = !checkbox.checked;
+            showNotification('Error', result.error, 'error');
+        }
+    }
+
+    // Log device activity
+    function logActivity(device, action) {
+        const logContainer = document.getElementById('activity-log');
+        const timestamp = new Date().toLocaleTimeString();
+        
+        // Create new log entry
+        const entry = document.createElement('div');
+        entry.className = 'device-control';
+        entry.style.animation = 'fadeIn 0.3s';
+        entry.innerHTML = `
+            <div class="device-info">
+                <div class="device-icon">📝</div>
+                <div>
+                    <div class="device-name">${device.replace(/-/g, ' ').toUpperCase()}</div>
+                    <div class="device-status">${action}</div>
+                </div>
+            </div>
+            <div style="color: #6b7280; font-size: 0.9rem;">${timestamp}</div>
+        `;
+        
+        // Clear "no activity" message if present
+        if (logContainer.textContent.includes('No recent')) {
+            logContainer.innerHTML = '';
+        }
+        
+        // Add to top of log
+        logContainer.insertBefore(entry, logContainer.firstChild);
+        
+        // Keep only last 10 entries
+        while (logContainer.children.length > 10) {
+            logContainer.removeChild(logContainer.lastChild);
+        }
+    }
+
+    // Show notification
+    function showNotification(title, message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.innerHTML = `<strong>${title}:</strong> ${message}`;
+        
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    // Add fade-in animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}
